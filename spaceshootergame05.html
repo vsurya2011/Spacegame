@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Racer</title>
+    <!-- Google Fonts for retro arcade feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* General body styling for a deep space background */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a2e; /* Very dark blue/purple for deep space */
+            font-family: 'Press Start 2P', cursive;
+            color: #ecf0f1; /* Light text color for contrast */
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        /* Game container for layout and shadow */
+        .game-container {
+            background-color: #0f0f1d; /* Even darker for the container */
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); /* Stronger shadow for floating effect */
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 20px;
+            max-width: 95vw; /* Responsive width */
+            box-sizing: border-box;
+            border: 2px solid #5a5a7f; /* Subtle border */
+        }
+
+        /* Title styling */
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            color: #00f0ff; /* Bright cyan for futuristic feel */
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.8), 0 0 5px rgba(0, 240, 255, 0.5); /* Neon glow effect */
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        /* Score and Lives container */
+        .score-lives-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px; /* Align with canvas max-width */
+            margin-bottom: 10px;
+            padding: 0 10px; /* Some padding for alignment */
+            box-sizing: border-box;
+        }
+
+        /* Score and Lives display */
+        #score, #lives {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00ff88; /* Bright green for positive score */
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        }
+        #lives {
+            color: #ffcc00; /* Yellow for lives */
+            text-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+            /* Ensure emojis are readable */
+            line-height: 1; /* Adjust line height if emojis are cut off */
+        }
+
+        /* Canvas styling - the cosmic field */
+        canvas {
+            background-color: #0a0a1a; /* Even darker for the space background in canvas */
+            border: 5px solid #333366; /* Dark purple/blue border */
+            border-radius: 8px;
+            display: block;
+            width: 100%; /* Responsive width */
+            max-width: 400px; /* Max width for desktop */
+            height: auto; /* Maintain aspect ratio (will be set by JS too) */
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6); /* Deeper inner shadow */
+        }
+
+        /* Game over message styling */
+        #game-over-message {
+            font-size: 2.5em;
+            color: #ff3366; /* Vibrant red for game over */
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.9), 0 0 3px rgba(255, 51, 102, 0.5); /* Glowing crash effect */
+        }
+
+        /* Control buttons container */
+        .controls {
+            display: flex;
+            gap: 25px; /* More space between buttons */
+            margin-top: 20px;
+            width: 100%; /* Full width within container */
+            justify-content: center; /* Center buttons */
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+        }
+
+        /* Individual button styling */
+        .control-button {
+            background-color: #6a05ad; /* Deep purple button */
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 35px; /* Larger padding for better touch targets */
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #4f037d; /* Darker purple shadow */
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            min-width: 120px; /* Ensure buttons are wide enough */
+            letter-spacing: 1px;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            max-width: 45%; /* Limit width to allow two per row on wider controls */
+        }
+
+        .control-button:active {
+            background-color: #4f037d;
+            box-shadow: 0 3px 0 #320252;
+            transform: translateY(3px);
+        }
+
+        /* Play again button specific styling */
+        #play-again-button {
+            background-color: #3498db; /* Blue for play again */
+            box-shadow: 0 6px 0 #2980b9;
+            display: none; /* Hidden by default */
+            margin-top: 10px; /* Separate from other controls */
+            padding: 18px 40px; /* Slightly more padding */
+            min-width: 200px;
+            max-width: unset; /* Remove max-width for this button */
+        }
+        #play-again-button:active {
+            background-color: #2980b9;
+            box-shadow: 0 3px 0 #21618c;
+        }
+
+        /* Loading message */
+        #loading-message {
+            font-size: 1.5em;
+            color: #00f0ff;
+            text-shadow: 0 0 5px #00f0ff;
+            margin-top: 20px;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+            #score, #lives {
+                font-size: 1.4em;
+            }
+            .controls {
+                gap: 15px;
+            }
+            .control-button {
+                padding: 15px 25px;
+                font-size: 1.2em;
+                max-width: 100%; /* Make buttons take full width on very small screens if wrapped */
+            }
+            #play-again-button {
+                padding: 15px 30px;
+                min-width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Space Racer</h1>
+        <div class="score-lives-container">
+            <div id="score">Score: 0</div>
+            <div id="lives">Lives: ❤️</div>
+        </div>
+        <div id="loading-message">Loading assets...</div>
+        <canvas id="gameCanvas" width="400" height="600" style="display: none;"></canvas>
+        <div id="game-over-message">CRASH! GAME OVER!</div>
+        <div class="controls" style="display: none;">
+            <button id="left-button" class="control-button">Left</button>
+            <button id="shoot-button" class="control-button">Shoot</button>
+            <button id="activate-shield-button" class="control-button" disabled>Shield</button>
+            <button id="right-button" class="control-button">Right</button>
+        </div>
+        <button id="play-again-button" class="control-button" style="display: none;">Play Again</button>
+    </div>
+
+    <script>
+        // Get the canvas and its 2D rendering context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants and initial values
+        const playerShipWidth = 50;
+        const playerShipHeight = 80;
+        const enemyShipWidth = 50;
+        const enemyShipHeight = 80;
+        const powerUpSize = 30;
+
+        const projectileWidth = 6;
+        const projectileHeight = 20;
+        const projectileSpeed = 15;
+        const fireRateDelay = 300;
+
+        const shieldDuration = 5000;
+        const shieldCooldown = 10000;
+        const MAX_LIVES = 3; // Maximum number of lives
+        const explosionDuration = 500; // Duration to show explosion GIF in milliseconds
+
+        let playerShip = {};
+        let enemyShips = [];
+        let projectiles = [];
+        let powerUps = [];
+        let explosions = []; // New array to store active explosions
+
+        let score = 0;
+        let lives = 1; // Initial lives
+        let gameOver = false;
+        let gameInterval;
+        let enemySpawnInterval;
+        let shieldPowerUpSpawnInterval;
+        let oneUpPowerUpSpawnInterval;
+        let lastShotTime = 0;
+
+        let isShieldActive = false;
+        let canActivateShield = false;
+        let lastShieldDeactivationTime = 0;
+
+        const initialGameSpeed = 15;
+        let gameSpeed = initialGameSpeed;
+        let scrollSpeed = 5;
+        const initialEnemySpawnDelay = 2000;
+        const initialShieldPowerUpSpawnDelay = 15000;
+        const oneUpPowerUpSpawnDelay = 40000;
+
+        let stars = [];
+
+        // Image assets
+        let playerShipImage;
+        let meteorImage;
+        let enemyShipImages = [];
+        let shieldImage;
+        let powerUpImageShield;
+        let powerUpImage1Up;
+        let explosionImage; // New explosion image variable
+
+        const imageAssets = [
+            { name: 'playership.png', src: 'playership.png', type: 'player' },
+            { name: 'meteor.png', src: 'meteor.png', type: 'meteor' },
+            { name: 'enemyship1.png', src: 'enemyship1.png', type: 'enemy' },
+            { name: 'enemyship2.png', src: 'enemyship2.png', type: 'enemy' },
+            { name: 'enemyship3.png', src: 'enemyship3.png', type: 'enemy' },
+            { name: 'energy-shield-transparent.png', src: 'energy-shield-transparent.png', type: 'shield' },
+            { name: 'powerup_shield.png', src: 'https://placehold.co/30x30/00FF00/000000?text=P', type: 'powerup_shield' },
+            { name: '1-up-powerup.png', src: '1-up-powerup.png', type: 'powerup_1up' },
+            { name: 'explosion.gif', src: 'explosion.gif', type: 'explosion' }, // Your explosion GIF
+        ];
+        const defaultFallbackImage = 'https://placehold.co/50x80/AAAAAA/000000?text=N/A';
+
+
+        // Get DOM elements
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const playAgainButton = document.getElementById('play-again-button');
+        const leftButton = document.getElementById('left-button');
+        const rightButton = document.getElementById('right-button');
+        const shootButton = document.getElementById('shoot-button');
+        const activateShieldButton = document.getElementById('activate-shield-button');
+        const loadingMessage = document.getElementById('loading-message');
+        const controlsDiv = document.querySelector('.controls');
+
+
+        /**
+         * Loads all game images. Resolves a Promise when all images are loaded.
+         * Handles fallback images if original fails to load.
+         */
+        function loadImages() {
+            let loadedCount = 0;
+            const totalImages = imageAssets.length;
+
+            return new Promise((resolve) => {
+                imageAssets.forEach(asset => {
+                    const img = new Image();
+                    img.onload = () => {
+                        loadedCount++;
+                        if (asset.name === 'playership.png') playerShipImage = img;
+                        else if (asset.name === 'meteor.png') meteorImage = img;
+                        else if (asset.type === 'enemy') enemyShipImages.push(img);
+                        else if (asset.name === 'energy-shield-transparent.png') shieldImage = img;
+                        else if (asset.name === 'powerup_shield.png') powerUpImageShield = img;
+                        else if (asset.name === '1-up-powerup.png') powerUpImage1Up = img;
+                        else if (asset.name === 'explosion.gif') explosionImage = img; // Assign explosion image
+
+                        if (loadedCount === totalImages) {
+                            resolve();
+                        }
+                    };
+                    img.onerror = () => {
+                        console.warn(`Failed to load image: ${asset.name}. Using fallback.`);
+                        const fallbackImg = new Image();
+                        fallbackImg.src = defaultFallbackImage;
+                        fallbackImg.onload = () => {
+                            loadedCount++;
+                            if (asset.name === 'playership.png') playerShipImage = fallbackImg;
+                            else if (asset.name === 'meteor.png') meteorImage = fallbackImg;
+                            else if (asset.type === 'enemy') enemyShipImages.push(fallbackImg);
+                            else if (asset.name === 'energy-shield-transparent.png') shieldImage = fallbackImg;
+                            else if (asset.name === 'powerup_shield.png') powerUpImageShield = fallbackImg;
+                            else if (asset.name === '1-up-powerup.png') powerUpImage1Up = fallbackImg;
+                            else if (asset.name === 'explosion.gif') explosionImage = fallbackImg; // Assign fallback for explosion
+
+                            if (loadedCount === totalImages) {
+                                resolve();
+                            }
+                        };
+                        fallbackImg.onerror = () => {
+                            console.error(`Failed to load fallback image: ${defaultFallbackImage}`);
+                            loadedCount++;
+                            if (loadedCount === totalImages) {
+                                resolve();
+                            }
+                        };
+                    };
+                    img.src = asset.src;
+                });
+            });
+        }
+
+
+        /**
+         * Initializes the star field for the background.
+         */
+        function initStars() {
+            stars = [];
+            const numStars = 100;
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    opacity: Math.random() * 0.5 + 0.5
+                });
+            }
+        }
+
+        /**
+         * Draws the space background with scrolling stars.
+         */
+        function drawSpace() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < stars.length; i++) {
+                const star = stars[i];
+                star.y += scrollSpeed * (star.size / 1.5);
+                if (star.y > canvas.height) {
+                    star.y = -star.size;
+                    star.x = Math.random() * canvas.width;
+                    star.size = Math.random() * 2 + 0.5;
+                    star.opacity = Math.random() * 0.5 + 0.5;
+                }
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            }
+            ctx.fillStyle = 'rgba(50, 50, 100, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        /**
+         * Draws the player's spaceship using the loaded image.
+         */
+        function drawPlayerShip() {
+            if (playerShipImage && playerShipImage.complete) {
+                ctx.drawImage(playerShipImage, playerShip.x, playerShip.y, playerShip.width, playerShip.height);
+            } else {
+                ctx.fillStyle = '#00f0ff';
+                ctx.fillRect(playerShip.x, playerShip.y, playerShip.width, playerShip.height);
+            }
+        }
+
+        /**
+         * Draws an enemy spaceship or asteroid using its associated image.
+         */
+        function drawEnemyShip(enemy) {
+            const img = enemy.image;
+            if (img && img.complete) {
+                ctx.drawImage(img, enemy.x, enemy.y, enemy.width, enemy.height);
+            } else {
+                ctx.fillStyle = enemy.color;
+                if (enemy.type === 'ship') {
+                    ctx.beginPath();
+                    ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+                    ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
+                    ctx.lineTo(enemy.x, enemy.y + enemy.height);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, Math.min(enemy.width,enemy.height) / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        /**
+         * Draws a laser projectile.
+         */
+        function drawProjectile(projectile) {
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 10;
+            ctx.fillRect(projectile.x, projectile.y, projectile.width, projectile.height);
+            ctx.shadowBlur = 0;
+        }
+
+        /**
+         * Draws a power-up pickup item.
+         */
+        function drawPowerUp(powerUp) {
+            let imgToDraw = null;
+            if (powerUp.type === 'shield') {
+                imgToDraw = powerUpImageShield;
+            } else if (powerUp.type === '1up') {
+                imgToDraw = powerUpImage1Up;
+            }
+
+            if (imgToDraw && imgToDraw.complete) {
+                ctx.drawImage(imgToDraw, powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            } else {
+                // Fallback drawing for power-ups
+                ctx.fillStyle = powerUp.type === 'shield' ? '#00FF00' : '#FFD700'; // Green for shield, Gold for 1-Up
+                ctx.beginPath();
+                ctx.arc(powerUp.x + powerUp.width / 2, powerUp.y + powerUp.height / 2, powerUp.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000000'; // Text color
+                ctx.font = `${powerUp.width * 0.6}px 'Press Start 2P'`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(powerUp.type === 'shield' ? 'P' : '1', powerUp.x + powerUp.width / 2, powerUp.y + powerUp.height / 2);
+            }
+        }
+
+        /**
+         * Draws the shield around the player's ship if active.
+         */
+        function drawShield() {
+            if (isShieldActive && shieldImage && shieldImage.complete) {
+                const shieldRenderWidth = playerShip.width * 1.5;
+                const shieldRenderHeight = playerShip.height * 1.5;
+                const shieldX = playerShip.x + playerShip.width / 2 - shieldRenderWidth / 2;
+                const shieldY = playerShip.y + playerShip.height / 2 - shieldRenderHeight / 2;
+
+                ctx.drawImage(shieldImage, shieldX, shieldY, shieldRenderWidth, shieldRenderHeight);
+            }
+        }
+
+        /**
+         * Draws an explosion animation.
+         * @param {object} explosion - The explosion object.
+         */
+        function drawExplosion(explosion) {
+            if (explosionImage && explosionImage.complete) {
+                ctx.drawImage(explosionImage, explosion.x, explosion.y, explosion.width, explosion.height);
+            } else {
+                // Fallback: draw a yellow circle
+                ctx.fillStyle = 'yellow';
+                ctx.beginPath();
+                ctx.arc(explosion.x + explosion.width / 2, explosion.y + explosion.height / 2, explosion.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        /**
+         * Generates a new enemy ship or asteroid at the top of a random "lane".
+         */
+        function generateEnemyShip() {
+            const spawnXPositions = [];
+            const laneCount = 3;
+            const laneSpacing = canvas.width / laneCount;
+            for (let i = 0; i < laneCount; i++) {
+                spawnXPositions.push(i * laneSpacing + laneSpacing / 2);
+            }
+
+            const randomLaneIndex = Math.floor(Math.random() * laneCount);
+            const enemyX = spawnXPositions[randomLaneIndex] - enemyShipWidth / 2;
+            const enemyY = -enemyShipHeight - 50;
+
+            const enemyType = Math.random() < 0.7 ? 'ship' : 'meteor';
+            let enemyColor = '#AAAAAA';
+            let enemyImage = null;
+
+            if (enemyType === 'ship') {
+                if (enemyShipImages.length > 0) {
+                    const randomEnemyImageIndex = Math.floor(Math.random() * enemyShipImages.length);
+                    enemyImage = enemyShipImages[randomEnemyImageIndex];
+                } else {
+                    console.warn("Enemy ship images not loaded, falling back to default.");
+                    enemyImage = new Image();
+                    enemyImage.src = defaultFallbackImage;
+                }
+            } else {
+                enemyImage = meteorImage;
+                enemyColor = '#7f8c8d';
+            }
+
+            enemyShips.push({
+                x: enemyX,
+                y: enemyY,
+                width: enemyShipWidth,
+                height: enemyShipHeight,
+                color: enemyColor,
+                type: enemyType,
+                image: enemyImage
+            });
+        }
+
+        /**
+         * Generates a new power-up of a specific type at the top of a random lane.
+         * @param {string} type - The type of power-up to generate ('shield' or '1up').
+         */
+        function generatePowerUp(type) {
+            const spawnXPositions = [];
+            const laneCount = 3;
+            const laneSpacing = canvas.width / laneCount;
+            for (let i = 0; i < laneCount; i++) {
+                spawnXPositions.push(i * laneSpacing + laneSpacing / 2);
+            }
+
+            const randomLaneIndex = Math.floor(Math.random() * laneCount);
+            const powerUpX = spawnXPositions[randomLaneIndex] - powerUpSize / 2;
+            const powerUpY = -powerUpSize - 50;
+
+            powerUps.push({
+                x: powerUpX,
+                y: powerUpY,
+                width: powerUpSize,
+                height: powerUpSize,
+                type: type // Use the type passed as argument
+            });
+        }
+
+        /**
+         * Fires a new projectile from the player's ship.
+         * Enforces a fire rate delay.
+         */
+        function fireProjectile() {
+            const currentTime = Date.now();
+            if (currentTime - lastShotTime < fireRateDelay) {
+                return;
+            }
+
+            projectiles.push({
+                x: playerShip.x + playerShip.width / 2 - projectileWidth / 2,
+                y: playerShip.y,
+                width: projectileWidth,
+                height: projectileHeight
+            });
+            lastShotTime = currentTime;
+        }
+
+        /**
+         * Activates the shield power-up.
+         */
+        function activateShield() {
+            if (canActivateShield && !isShieldActive) {
+                isShieldActive = true;
+                canActivateShield = false;
+                activateShieldButton.disabled = true;
+                activateShieldButton.textContent = 'Shield (Active)';
+
+                setTimeout(deactivateShield, shieldDuration);
+            }
+        }
+
+        /**
+         * Deactivates the shield and starts its cooldown.
+         */
+        function deactivateShield() {
+            isShieldActive = false;
+            lastShieldDeactivationTime = Date.now();
+            activateShieldButton.textContent = 'Shield (Cooldown)';
+
+            const cooldownInterval = setInterval(() => {
+                const elapsed = Date.now() - lastShieldDeactivationTime;
+                const remaining = Math.ceil((shieldCooldown - elapsed) / 1000);
+                if (remaining > 0) {
+                    activateShieldButton.textContent = `Shield (${remaining}s)`;
+                } else {
+                    clearInterval(cooldownInterval);
+                    updateShieldButtonState();
+                }
+            }, 1000);
+        }
+
+        /**
+         * Updates the state and text of the shield button based on game conditions.
+         */
+        function updateShieldButtonState() {
+            if (isShieldActive) {
+                activateShieldButton.disabled = true;
+                activateShieldButton.textContent = 'Shield (Active)';
+            } else if (canActivateShield && (Date.now() - lastShieldDeactivationTime >= shieldCooldown)) {
+                activateShieldButton.disabled = false;
+                activateShieldButton.textContent = 'Shield (Ready)';
+            } else if (Date.now() - lastShieldDeactivationTime < shieldCooldown) {
+                activateShieldButton.disabled = true;
+                const elapsed = Date.now() - lastShieldDeactivationTime;
+                const remaining = Math.ceil((shieldCooldown - elapsed) / 1000);
+                activateShieldButton.textContent = `Shield (${remaining}s)`;
+            } else {
+                activateShieldButton.disabled = true;
+                activateShieldButton.textContent = 'Shield';
+            }
+        }
+
+        /**
+         * Updates the lives display with heart emojis.
+         */
+        function updateLivesDisplay() {
+            livesDisplay.textContent = 'Lives: ' + '❤️'.repeat(lives);
+        }
+
+
+        /**
+         * Updates game elements: moves enemy ships, projectiles, power-ups, checks for off-screen entities.
+         */
+        function updateGameArea() {
+            playerShip.x += playerShip.dx || 0;
+            if (playerShip.x < 0) {
+                playerShip.x = 0;
+            } else if (playerShip.x + playerShip.width > canvas.width) {
+                playerShip.x = canvas.width - playerShip.width;
+            }
+
+            for (let i = 0; i < enemyShips.length; i++) {
+                enemyShips[i].y += scrollSpeed * 0.8;
+            }
+
+            for (let i = 0; i < projectiles.length; i++) {
+                projectiles[i].y -= projectileSpeed;
+            }
+
+            for (let i = 0; i < powerUps.length; i++) {
+                powerUps[i].y += scrollSpeed * 0.6;
+            }
+
+            // Filter out expired explosions
+            explosions = explosions.filter(exp => Date.now() - exp.startTime < explosionDuration);
+
+            enemyShips = enemyShips.filter(enemy => enemy.y < canvas.height);
+            projectiles = projectiles.filter(projectile => projectile.y + projectile.height > 0);
+            powerUps = powerUps.filter(powerUp => powerUp.y < canvas.height);
+
+            score += 0.1;
+            scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+            updateLivesDisplay();
+
+            updateShieldButtonState();
+        }
+
+        /**
+         * Checks for collision between player ship/projectiles and other entities.
+         */
+        function checkCollision() {
+            // Player ship collision with enemy ships
+            for (let i = 0; i < enemyShips.length; i++) {
+                const enemy = enemyShips[i];
+                if (playerShip.x < enemy.x + enemy.width &&
+                    playerShip.x + playerShip.width > enemy.x &&
+                    playerShip.y < enemy.y + enemy.height &&
+                    playerShip.y + playerShip.height > enemy.y) {
+
+                    if (isShieldActive) {
+                        explosions.push({ x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height, startTime: Date.now(), image: explosionImage });
+                        enemyShips.splice(i, 1);
+                        score += 100;
+                        scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+                        i--;
+                    } else {
+                        lives--;
+                        updateLivesDisplay();
+                        explosions.push({ x: playerShip.x, y: playerShip.y, width: playerShip.width, height: playerShip.height, startTime: Date.now(), image: explosionImage }); // Explosion on player death
+                        enemyShips.splice(i, 1); // Remove the enemy that hit
+                        i--;
+                        if (lives <= 0) {
+                            gameOver = true;
+                        }
+                    }
+                }
+            }
+
+            // Projectile collision with enemy ships
+            for (let p = 0; p < projectiles.length; p++) {
+                const projectile = projectiles[p];
+                for (let e = 0; e < enemyShips.length; e++) {
+                    const enemy = enemyShips[e];
+
+                    if (projectile.x < enemy.x + enemy.width &&
+                        projectile.x + projectile.width > enemy.x &&
+                        projectile.y < enemy.y + enemy.height &&
+                        projectile.y + projectile.height > enemy.y) {
+
+                        explosions.push({ x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height, startTime: Date.now(), image: explosionImage }); // Explosion on enemy hit
+                        enemyShips.splice(e, 1);
+                        projectiles.splice(p, 1);
+
+                        score += 50;
+                        scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+                        p--;
+                        break;
+                    }
+                }
+            }
+
+            // Player ship collision with power-ups
+            for (let i = 0; i < powerUps.length; i++) {
+                const powerUp = powerUps[i];
+                if (playerShip.x < powerUp.x + powerUp.width &&
+                    playerShip.x + playerShip.width > powerUp.x &&
+                    playerShip.y < powerUp.y + powerUp.height &&
+                    playerShip.y + playerShip.height > powerUp.y) {
+
+                    if (powerUp.type === 'shield') {
+                        if (!isShieldActive && (Date.now() - lastShieldDeactivationTime >= shieldCooldown)) {
+                            canActivateShield = true;
+                            updateShieldButtonState();
+                        }
+                    } else if (powerUp.type === '1up') {
+                        if (lives < MAX_LIVES) {
+                            lives++;
+                            updateLivesDisplay();
+                        }
+                    }
+                    powerUps.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        /**
+         * The main game loop.
+         */
+        function gameLoop() {
+            if (gameOver) {
+                clearInterval(gameInterval);
+                clearInterval(enemySpawnInterval);
+                clearInterval(shieldPowerUpSpawnInterval);
+                clearInterval(oneUpPowerUpSpawnInterval);
+                gameOverMessage.style.display = 'block';
+                playAgainButton.style.display = 'block';
+                leftButton.style.display = 'none';
+                rightButton.style.display = 'none';
+                shootButton.style.display = 'none';
+                activateShieldButton.style.display = 'none';
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSpace();
+            drawPlayerShip();
+            enemyShips.forEach(drawEnemyShip);
+            projectiles.forEach(drawProjectile);
+            powerUps.forEach(drawPowerUp);
+            drawShield();
+            explosions.forEach(drawExplosion); // Draw all active explosions
+
+            updateGameArea();
+            checkCollision();
+        }
+
+        /**
+         * Changes the player ship's horizontal movement direction.
+         */
+        function changeDirection(direction) {
+            const moveAmount = 10;
+            if (direction === 'left') {
+                playerShip.dx = -moveAmount;
+            } else if (direction === 'right') {
+                playerShip.dx = moveAmount;
+            }
+        }
+
+        /**
+         * Stops the player ship's horizontal movement.
+         */
+        function stopDirection() {
+            playerShip.dx = 0;
+        }
+
+        /**
+         * Initializes or resets the game state.
+         */
+        function initGame() {
+            gameOver = false;
+            score = 0;
+            lives = 1; // Reset lives to initial value
+            enemyShips = [];
+            projectiles = [];
+            powerUps = [];
+            explosions = []; // Clear explosions on reset
+            lastShotTime = 0;
+            isShieldActive = false;
+            canActivateShield = false;
+            lastShieldDeactivationTime = 0;
+            scrollSpeed = 5;
+
+            const container = document.querySelector('.game-container');
+            const newCanvasWidth = Math.min(container.clientWidth - 50, 400);
+            canvas.width = newCanvasWidth;
+            canvas.height = newCanvasWidth * 1.5;
+
+            initStars();
+
+            playerShip = {
+                x: (canvas.width / 2) - (playerShipWidth / 2),
+                y: canvas.height - playerShipHeight - 30,
+                width: playerShipWidth,
+                height: playerShipHeight,
+                dx: 0
+            };
+
+            scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+            updateLivesDisplay(); // Initial update for lives display
+            gameOverMessage.style.display = 'none';
+            playAgainButton.style.display = 'none';
+            leftButton.style.display = 'block';
+            rightButton.style.display = 'block';
+            shootButton.style.display = 'block';
+            activateShieldButton.style.display = 'block';
+            updateShieldButtonState();
+
+            if (gameInterval) clearInterval(gameInterval);
+            if (enemySpawnInterval) clearInterval(enemySpawnInterval);
+            if (shieldPowerUpSpawnInterval) clearInterval(shieldPowerUpSpawnInterval);
+            if (oneUpPowerUpSpawnInterval) clearInterval(oneUpPowerUpSpawnInterval);
+
+            gameInterval = setInterval(gameLoop, gameSpeed);
+            enemySpawnInterval = setInterval(generateEnemyShip, initialEnemySpawnDelay);
+            shieldPowerUpSpawnInterval = setInterval(() => generatePowerUp('shield'), initialShieldPowerUpSpawnDelay);
+            oneUpPowerUpSpawnInterval = setInterval(() => generatePowerUp('1up'), oneUpPowerUpSpawnDelay);
+        }
+
+        // --- Event Listeners ---
+        leftButton.addEventListener('mousedown', () => changeDirection('left'));
+        leftButton.addEventListener('mouseup', stopDirection);
+        leftButton.addEventListener('mouseleave', stopDirection);
+
+        rightButton.addEventListener('mousedown', () => changeDirection('right'));
+        rightButton.addEventListener('mouseup', stopDirection);
+        rightButton.addEventListener('mouseleave', stopDirection);
+
+        shootButton.addEventListener('click', fireProjectile);
+        activateShieldButton.addEventListener('click', activateShield);
+
+        // Touch events for mobile
+        leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection('left'); }, { passive: false });
+        leftButton.addEventListener('touchend', stopDirection);
+        rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection('right'); }, { passive: false });
+        rightButton.addEventListener('touchend', stopDirection);
+        shootButton.addEventListener('touchstart', (e) => { e.preventDefault(); fireProjectile(); }, { passive: false });
+        activateShieldButton.addEventListener('touchstart', (e) => { e.preventDefault(); activateShield(); }, { passive: false });
+
+
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            if (gameOver) return;
+            if (event.key === 'ArrowLeft') {
+                changeDirection('left');
+            } else if (event.key === 'ArrowRight') {
+                changeDirection('right');
+            } else if (event.key === ' ') {
+                fireProjectile();
+            } else if (event.key === 'Shift' || event.key === 'Control') {
+                activateShield();
+            }
+        });
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                stopDirection();
+            }
+        });
+
+        playAgainButton.addEventListener('click', initGame);
+
+        window.addEventListener('resize', () => {
+            initGame();
+        });
+
+        // --- Initial Load ---
+        canvas.style.display = 'none';
+        controlsDiv.style.display = 'none';
+        playAgainButton.style.display = 'none';
+
+        loadImages().then(() => {
+            loadingMessage.style.display = 'none';
+            canvas.style.display = 'block';
+            controlsDiv.style.display = 'flex';
+            initGame();
+        }).catch(error => {
+            console.error("Error loading game images:", error);
+            loadingMessage.textContent = "Failed to load game. Please try again.";
+        });
+
+    </script>
+</body>
+</html>

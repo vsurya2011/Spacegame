@@ -62,8 +62,8 @@
 ### 1. Clone or download the repo
 
 bash
-git clone https://github.com/yourusername/space-racer.git
-cd space-racer
+[git clone https://github.com/yourusername/space-racer.git
+cd space-racer](https://github.com/vsurya2011/Spacegame/tree/main)
 
 ### 2. Open in Browser
 Simply open spaceshootergame05.html in any modern browser (no server needed).
